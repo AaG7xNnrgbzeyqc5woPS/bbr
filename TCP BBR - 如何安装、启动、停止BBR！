@@ -1,0 +1,82 @@
+ see:
+ https://www.cnblogs.com/sunylat/p/9521881.html
+ 
+ TCP BBR - 如何安装、启动、停止BBR！
+
+TCP BBR从Linux 4.9 内核开始，就作为它内核的一部分存在了，如果想使用BBR，那么首先就是判断内核版本是否大于4.9，如果符合版本标准，那么直接启动BBR就可以了，如果低于4.9，升级内核之后启动就行了。
+
+一，使用一键脚本安装和启动BBR。
+
+       推荐使用秋水逸冰的一键脚本，具体可以参考：
+
+       https://www.cnblogs.com/sunylat/p/9521562.html
+
+       如果一键脚本不能访问，那么可以下载我在这里保存的秋水逸冰的一键脚本：
+
+       https://www.cnblogs.com/sunylat/p/9521561.html
+
+       一键脚本，大大简化了手动处理的过程，大致的升级过程如下：
+
+       1，安装ELRepo库。
+
+       2，启动TCP BBR。
+
+       3，更新系统默认启动内核为新内核。
+
+二，手动升级内核安装和启动BBR。
+
+       1，手动升级内核。我在Cent OS 6 中升级内核的整个过程，见下面博客：
+
+            https://www.cnblogs.com/sunylat/p/9518563.html
+
+        2，启动BBR。依次执行下面命令就可以了。
+
+              sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf 
+
+              sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 
+
+              echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf 
+
+              echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf 
+
+              sysctl -p  
+
+              reboot 
+
+         当系统重新启动后，BBR就已经可以使用了！
+
+        3，验证BBR是否已经可用。
+
+                   A，验证当前TCP控制算法的命令：
+
+                        sysctl net.ipv4.tcp_available_congestion_control 
+
+                       返回值一般为：
+                             net.ipv4.tcp_available_congestion_control = bbr cubic reno
+                       或者为：
+                             net.ipv4.tcp_available_congestion_control = reno cubic bbr
+
+                 B，验证BBR是否已经启动。
+
+                        sysctl net.ipv4.tcp_congestion_control 
+
+                        返回值一般为：
+                               net.ipv4.tcp_congestion_control = bbr
+
+                         lsmod | grep bbr 
+
+                         返回值有 tcp_bbr 模块即说明 bbr 已启动。注意：并不是所有的 VPS 都会有此返回值，若没有也属正常。
+
+三，停止BBR。依次执行下面命令就可以了。   
+
+              sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf 
+
+              sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 
+
+              sysctl -p       
+
+              reboot 
+              
+              -----------------
+注释： 这个方法应该是linux各个发行版通用的。
+
